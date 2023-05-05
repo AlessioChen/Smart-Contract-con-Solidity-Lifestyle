@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 contract LoanManager {
 
     enum LoanState{
+        Requested,
         Active,
         Paid,
         Late,
@@ -13,7 +14,7 @@ contract LoanManager {
 
 
     struct Loan {
-        address borrower;
+        address payable borrower;
         address payable lender;
         uint amount;
         uint256 interestRate;
@@ -48,34 +49,42 @@ contract LoanManager {
         _;
     }
 
+    function borrow(uint _amount, uint _interestRate, uint _duration) external payable {
+        require(_amount > 0, "Amount should be greater than 0");
+        require(_interestRate > 0, "Interest rate should be greater than 0");
+        require(_duration > 0, "Duration should be greater than 0");
+        require(msg.value == _amount, "Insufficient funds");
 
-
-    function createLoan(address _borrower, uint _interestRate, uint _duration) public payable{
-        require(_borrower != address(0), "Invalid borrower address");
-        require(msg.value > 0, "Loan amount must be greater than zero");
-        require(_interestRate > 0, "Interest rate must be greater than zero");
-        require(_duration > 0, "Loan duration must be greater than zero");
-
-        uint totalAmount = msg.value + ((msg.value * _interestRate) / 100);
-        uint startTime = block.timestamp;
-        uint endTime = startTime + (_duration * 1 days);
-
-        loans.push(Loan({
-            borrower: _borrower,
-            lender: payable(msg.sender),
+        Loan memory newLoan = Loan({
+            borrower: payable(msg.sender),
+            lender: payable(address(0)),
             amount: msg.value,
-            interestRate: _interestRate,
+            totalAmount: _amount,
             duration: _duration,
-            startDate: startTime,
-            endDate: endTime,
-            totalAmount: totalAmount,
-            remainingAmount: totalAmount,
-            state: LoanState.Active
-        }));
+            remainingAmount: _amount,
+            interestRate: _interestRate,
+            startDate: block.timestamp,
+            endDate: block.timestamp + (_duration * 1 days),
+            state: LoanState.Requested
+        });
+
+        loans.push(newLoan);
+    }
+
+
+    function lend(uint _loanId) external payable onlyExistLoan(_loanId) {
+        Loan storage loan = loans[_loanId];
+        require(loan.lender == address(0), "Loan has already been lent out");
+        require(msg.value == loan.totalAmount, "Insufficient funds");
+
+        loans[_loanId].state = LoanState.Active;
+
+        loan.lender = payable(msg.sender);
+        loan.borrower.transfer(loan.totalAmount);
 
     }
 
-    function cancelLoan(uint _loanId) public onlyExistLoan(_loanId) onlyValidState(_loanId, LoanState.Active)  onlyBorrower(_loanId) {
+    function cancelLoan(uint _loanId) public onlyExistLoan(_loanId) onlyValidState(_loanId, LoanState.Requested)  onlyBorrower(_loanId) {
         loans[_loanId].state = LoanState.Cancelled;
     }
 
