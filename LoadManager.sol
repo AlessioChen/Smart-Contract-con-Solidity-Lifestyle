@@ -6,9 +6,10 @@ contract LoanManager {
         Active,
         Paid,
         Late,
-        Defaulted,
+        differentAmount,
         Cancelled
     }
+
 
 
     struct Loan {
@@ -83,12 +84,13 @@ contract LoanManager {
         require(msg.value > 0 && msg.value <= loans[_loanId].remainingAmount, "Invalid repayment amount");
 
         uint penalty = 0;
+
         if (block.timestamp > loans[_loanId].endDate) {
             penalty = ((loans[_loanId].totalAmount * 10) / 100); // penalty of 10% of the total amount
-            loans[_loanId].state = LoanState.Defaulted;
-        } else if (block.timestamp > (loans[_loanId].endDate - 1 days)) {
-            penalty = ((loans[_loanId].totalAmount * 5) / 100); // penalty of 5% of the total amount
             loans[_loanId].state = LoanState.Late;
+        } else if (msg.value != loans[_loanId].totalAmount) {
+            penalty = ((loans[_loanId].totalAmount * 5) / 100); // penalty of 5% of the total amount
+            loans[_loanId].state = LoanState.differentAmount;
         }
 
         uint amountToRepay = msg.value;
