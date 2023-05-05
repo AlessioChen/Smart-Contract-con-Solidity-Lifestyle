@@ -10,6 +10,11 @@ contract LoanManager {
         Cancelled
     }
 
+    enum PayBackInterval {
+        fifteenDays,
+        oneMonth
+    }
+
     struct Loan {
         address borrower;
         address lender;
@@ -18,13 +23,14 @@ contract LoanManager {
         uint256 dueDate;
         uint256 amount;
         uint256 amountPaid;
+        PayBackInterval interval;
         LoanState state;
     }
 
     mapping (uint256 => Loan) public loans;
     uint256 public loanCounter;
 
-    modifier onlyExistLoan(uint256 loanId) {
+    modifier onlyLoanExists(uint256 loanId) {
         require(loanId > 0 && loanId <= loanCounter, "Loan does not exist");
         _;
     }
@@ -45,7 +51,7 @@ contract LoanManager {
     }
 
 
-    function requestLoan(address _lender, uint256 _amount, uint256 _interestRate, uint256 _duration) public{
+    function requestLoan(address _lender, uint256 _amount, uint256 _interestRate, uint256 _duration, PayBackInterval interval) public{
         require(_amount > 0, "Loan amount must be grater than zero.");
         require(_interestRate > 0, "Interest rate must be grater than zero.");
 
@@ -58,6 +64,7 @@ contract LoanManager {
             endTime,
             0,
             0,
+            interval,
             LoanState.Requested
         );
 
@@ -65,16 +72,16 @@ contract LoanManager {
 
     }
 
-    function cancelLoan(uint _loanId) public onlyExistLoan(_loanId) onlyValidState(_loanId, LoanState.Requested)  onlyBorrower(_loanId) {
+    function cancelLoan(uint _loanId) public onlyLoanExists(_loanId) onlyValidState(_loanId, LoanState.Requested)  onlyBorrower(_loanId) {
         loans[_loanId].state = LoanState.Cancelled;
     }
 
-    function approveLoan(uint256 _loanId) public payable onlyExistLoan(_loanId) onlyValidState(_loanId, LoanState.Requested) onlyLender(_loanId){
+    function approveLoan(uint256 _loanId) public payable onlyLoanExists(_loanId) onlyValidState(_loanId, LoanState.Requested) onlyLender(_loanId){
         require(msg.value == loans[_loanId].amount, "Amount sent must match loan amount.");
         loans[_loanId].state = LoanState.Active;
     }
 
-    function getLoan(uint256 _loanId) public view onlyExistLoan(_loanId) returns(
+    function getLoan(uint256 _loanId) public view onlyLoanExists(_loanId) returns(
         address borrower,
         address lender,
         uint256 interestRate,
@@ -82,6 +89,7 @@ contract LoanManager {
         uint256 dueDate,
         uint256 amount,
         uint256 amountPaid,
+        PayBackInterval interval,
         LoanState state
 
     ){
@@ -95,6 +103,7 @@ contract LoanManager {
         dueDate = loan.dueDate;
         amount = loan.amount;
         amountPaid = loan.amountPaid;
+        interval = loan.interval;
         state = loan.state;
 
     }
