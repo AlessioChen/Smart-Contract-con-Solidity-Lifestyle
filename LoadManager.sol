@@ -71,7 +71,7 @@ contract LoanManager {
             borrower: payable(msg.sender),
             lender: payable(address(0)),
             amountRequested: msg.value,
-            amountGiven: totalAmount,
+            amountGiven: _amount,
             duration: _duration,
             remainingAmountToPay: totalAmount,
             interestRate: _interestRate,
@@ -117,7 +117,7 @@ contract LoanManager {
     function repayLoan(uint _loanId) public payable onlyValidState(_loanId, LoanState.Active) onlyExistLoan(_loanId)  onlyBorrower(_loanId){
 
         Loan storage loan = loans[_loanId];
-        uint penalty = LoanLibrary.calculatePenalty(loan.amountRequested, loan.amountGiven ,loan.endDate, loan.startDate);
+        uint penalty = LoanLibrary.calculatePenalty(loan.amountRequested, loan.remainingAmountToPay ,loan.endDate, loan.startDate);
         uint interest = LoanLibrary.calculateInterest(loan.amountRequested, loan.interestRate, loan.duration);
         require(msg.value > 0 && msg.value <= loan.remainingAmountToPay + interest + penalty, "Invalid repayment amount");
 
