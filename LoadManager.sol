@@ -50,6 +50,14 @@ contract LoanManager {
         _;
     }
 
+
+    /**
+    *
+    * @dev Allows a borrower to borrow a certain amount of funds for a specified duration with a given interest rate
+    * @param _amount The amount of funds the borrower wants to borrow
+    * @param _interestRate The interest rate of the loan
+    * @param _duration The duration of the loan in days
+    */
     function borrow(uint _amount, uint _interestRate, uint _duration) external payable {
         require(_amount > 0, "Amount should be greater than 0");
         require(_interestRate > 0, "Interest rate should be greater than 0");
@@ -75,7 +83,10 @@ contract LoanManager {
         loans.push(newLoan);
     }
 
-
+    /**
+    * @dev Allows a lender to lend funds to a borrower for a requested loan.
+    * @param _loanId The ID of the loan being lent out.
+    */
     function lend(uint _loanId) external payable onlyExistLoan(_loanId) {
         Loan storage loan = loans[_loanId];
         require(loan.lender == address(0), "Loan has already been lent out");
@@ -88,10 +99,21 @@ contract LoanManager {
 
     }
 
+    /**
+    * @dev Allows a borrower to cancel a requested loan.
+    * The function updates the state of the loan to 'Cancelled'.
+    * @param _loanId The ID of the loan being cancelled.
+    */
     function cancelLoan(uint _loanId) public onlyExistLoan(_loanId) onlyValidState(_loanId, LoanState.Requested)  onlyBorrower(_loanId) {
         loans[_loanId].state = LoanState.Cancelled;
     }
 
+
+    /**
+    * @dev Allows a borrower to repay a loan.
+    * The function updates the remaining amount to pay, and if the loan is fully repaid, updates the state to 'Paid' and transfers the repayment amount to the lender.
+    * @param _loanId The ID of the loan being repaid.
+    */
     function repayLoan(uint _loanId) public payable onlyValidState(_loanId, LoanState.Active) onlyExistLoan(_loanId)  onlyBorrower(_loanId){
 
         Loan storage loan = loans[_loanId];
@@ -111,6 +133,11 @@ contract LoanManager {
     }
 
 
+
+    /**
+    * @dev Returns the details of a loan with the given ID
+    * @param _loanId The ID of the loan being repaid.
+    */
     function getLoan(uint256 _loanId) public view onlyExistLoan(_loanId) returns(
         address borrower,
         address lender,
