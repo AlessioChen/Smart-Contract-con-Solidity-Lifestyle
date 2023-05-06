@@ -17,9 +17,9 @@ contract LoanManager {
     struct Loan {
         address payable borrower;
         address payable lender;
-        uint amountRequested;
+        uint256 amountRequested;
         uint256 interestRate;
-        uint duration;
+        uint256 duration;
         uint256 startDate;
         uint256 endDate;
         uint256 amountGiven;
@@ -30,7 +30,7 @@ contract LoanManager {
     Loan[] public loans;
 
 
-    modifier onlyExistLoan(uint _loanId) {
+    modifier onlyExistLoan(uint256 _loanId) {
         require(_loanId < loans.length, "Invalid loan ID");
         _;
     }
@@ -58,7 +58,7 @@ contract LoanManager {
     * @param _interestRate The interest rate of the loan
     * @param _duration The duration of the loan in days
     */
-    function borrow(uint _amount, uint _interestRate, uint _duration) external payable {
+    function borrow(uint256 _amount, uint256 _interestRate, uint256 _duration) external payable {
         require(_amount > 0, "Amount should be greater than 0");
         require(_interestRate > 0, "Interest rate should be greater than 0");
         require(_duration > 0, "Duration should be greater than 0");
@@ -87,7 +87,7 @@ contract LoanManager {
     * @dev Allows a lender to lend funds to a borrower for a requested loan.
     * @param _loanId The ID of the loan being lent out.
     */
-    function lend(uint _loanId) external payable onlyExistLoan(_loanId) {
+    function lend(uint256 _loanId) external payable onlyExistLoan(_loanId) {
         Loan storage loan = loans[_loanId];
         require(loan.lender == address(0), "Loan has already been lent out");
         require(msg.value == loan.amountRequested, "Insufficient funds");
@@ -104,7 +104,7 @@ contract LoanManager {
     * The function updates the state of the loan to 'Cancelled'.
     * @param _loanId The ID of the loan being cancelled.
     */
-    function cancelLoan(uint _loanId) public onlyExistLoan(_loanId) onlyValidState(_loanId, LoanState.Requested)  onlyBorrower(_loanId) {
+    function cancelLoan(uint256 _loanId) public onlyExistLoan(_loanId) onlyValidState(_loanId, LoanState.Requested)  onlyBorrower(_loanId) {
         loans[_loanId].state = LoanState.Cancelled;
     }
 
@@ -114,14 +114,14 @@ contract LoanManager {
     * The function updates the remaining amount to pay, and if the loan is fully repaid, updates the state to 'Paid' and transfers the repayment amount to the lender.
     * @param _loanId The ID of the loan being repaid.
     */
-    function repayLoan(uint _loanId) public payable onlyValidState(_loanId, LoanState.Active) onlyExistLoan(_loanId)  onlyBorrower(_loanId){
+    function repayLoan(uint256 _loanId) public payable onlyValidState(_loanId, LoanState.Active) onlyExistLoan(_loanId)  onlyBorrower(_loanId){
 
         Loan storage loan = loans[_loanId];
-        uint penalty = LoanLibrary.calculatePenalty(loan.amountRequested, loan.remainingAmountToPay ,loan.endDate, loan.startDate);
-        uint interest = LoanLibrary.calculateInterest(loan.amountRequested, loan.interestRate, loan.duration);
+        uint256 penalty = LoanLibrary.calculatePenalty(loan.amountRequested, loan.remainingAmountToPay ,loan.endDate, loan.startDate);
+        uint256 interest = LoanLibrary.calculateInterest(loan.amountRequested, loan.interestRate, loan.duration);
         require(msg.value > 0 && msg.value <= loan.remainingAmountToPay + interest + penalty, "Invalid repayment amount");
 
-        uint amountToRepay = msg.value + penalty + interest;
+        uint256 amountToRepay = msg.value + penalty + interest;
         loan.remainingAmountToPay -= msg.value;
 
         if(loan.remainingAmountToPay <= 0){
@@ -141,9 +141,9 @@ contract LoanManager {
     function getLoan(uint256 _loanId) public view onlyExistLoan(_loanId) returns(
         address borrower,
         address lender,
-        uint amountRequested,
+        uint256 amountRequested,
         uint256 interestRate,
-        uint duration,
+        uint256 duration,
         uint256 startDate,
         uint256 endDate,
         uint256 amountGiven,
