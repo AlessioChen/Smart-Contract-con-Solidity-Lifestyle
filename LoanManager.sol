@@ -8,10 +8,9 @@ contract LoanManager {
         Requested,
         Active,
         Paid,
-        Late,
+        Late, //TODO: never used
         Cancelled
     }
-
 
 
     struct Loan {
@@ -62,7 +61,7 @@ contract LoanManager {
         require(_amount > 0, "Amount should be greater than 0");
         require(_interestRate > 0, "Interest rate should be greater than 0");
         require(_duration > 0, "Duration should be greater than 0");
-        require(msg.value == _amount, "Insufficient funds");
+        require(msg.value == _amount, "Insufficient funds"); //TODO: msg.value >= amount
 
         uint interest = LoanLibrary.calculateInterest(_amount, _interestRate, _duration);
         uint totalAmount = _amount + interest;
@@ -70,8 +69,8 @@ contract LoanManager {
         Loan memory newLoan = Loan({
             borrower: payable(msg.sender),
             lender: payable(address(0)),
-            amountRequested: msg.value,
-            amountGiven: _amount,
+            amountRequested: msg.value, //TODO: this is amount
+            amountGiven: _amount, // TODO: msg.value //TODO: interesse sul collaterale
             duration: _duration,
             remainingAmountToPay: totalAmount,
             interestRate: _interestRate,
@@ -91,6 +90,7 @@ contract LoanManager {
         Loan storage loan = loans[_loanId];
         require(loan.lender == address(0), "Loan has already been lent out");
         require(msg.value == loan.amountRequested, "Insufficient funds");
+        //TODO: check for state requested
 
         loans[_loanId].state = LoanState.Active;
 
@@ -106,6 +106,7 @@ contract LoanManager {
     */
     function cancelLoan(uint256 _loanId) public onlyExistLoan(_loanId) onlyValidState(_loanId, LoanState.Requested)  onlyBorrower(_loanId) {
         loans[_loanId].state = LoanState.Cancelled;
+        //TODO: send amountGiven to borrower
     }
 
 
@@ -117,18 +118,19 @@ contract LoanManager {
     function repayLoan(uint256 _loanId) public payable onlyValidState(_loanId, LoanState.Active) onlyExistLoan(_loanId)  onlyBorrower(_loanId){
 
         Loan storage loan = loans[_loanId];
-        uint256 penalty = LoanLibrary.calculatePenalty(loan.amountRequested, loan.remainingAmountToPay ,loan.endDate, loan.startDate);
+        uint256 penalty = LoanLibrary.calculatePenalty(loan.amountRequested, loan.remainingAmountToPay ,loan.endDate, loan.startDate); //TODO: 4th parameter should be block.timestamp
         uint256 interest = LoanLibrary.calculateInterest(loan.amountRequested, loan.interestRate, loan.duration);
-        require(msg.value > 0 && msg.value <= loan.remainingAmountToPay + interest + penalty, "Invalid repayment amount");
+        require(msg.value > 0 && msg.value <= loan.remainingAmountToPay + interest + penalty, "Invalid repayment amount"); //TODO: msg.value >= loan.remainingAmountToPay + interest + penalty
 
-        uint256 amountToRepay = msg.value + penalty + interest;
-        loan.remainingAmountToPay -= msg.value;
+        uint256 amountToRepay = msg.value + penalty + interest; //TODO: can't use penalty and interest here since it's not passed by borrower -> can be removed
+        //TODO: loan.remainingAmountToPay += penalty + interest;
+        loan.remainingAmountToPay -= msg.value; //NOTE: anche se fa overflow, il contratto reverta la funzione
 
-        if(loan.remainingAmountToPay <= 0){
+        if(loan.remainingAmountToPay <= 0){ //TODO: can't be negative since remainingAmountToPay is unsigned -> == 0
             loan.state = LoanState.Paid;
         }
 
-        loan.lender.transfer(amountToRepay);
+        loan.lender.transfer(amountToRepay); //TODO: WARNING - vulnerability -> lenders can receive more than what they given
 
     }
 
@@ -138,7 +140,7 @@ contract LoanManager {
     * @dev Returns the details of a loan with the given ID
     * @param _loanId The ID of the loan being repaid.
     */
-    function getLoan(uint256 _loanId) public view onlyExistLoan(_loanId) returns(
+    function getLoan(uint256 _loanId) public view onlyExistLoan(_loanId) returns( //TODO: can just return the loan struct
         address borrower,
         address lender,
         uint256 amountRequested,
