@@ -8,7 +8,7 @@ library LoanLibrary {
      *
      * @dev Calculates the interest to be paid on a loan based on the interest rate and the loan duration.
     * @param _amount The amount of the loan.
-    * @param _interestRate The interest rate of the loan, expressed an an annual percentage rate.
+    * @param _interestRate The interest rate of the loan, expressed an annual percentage rate.
     * @param  _duration The duration of the loan, in seconds.
     * @return The interest to be paid on the loan
     */
