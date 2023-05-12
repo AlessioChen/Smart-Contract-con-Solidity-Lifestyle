@@ -119,8 +119,7 @@ contract LoanManager {
         Loan storage loan = loans[_loanId];
         uint256 penalty = LoanLibrary.calculatePenalty(loan.amountRequested, loan.remainingAmountToPay, loan.endDate, block.timestamp);
         uint256 interest = LoanLibrary.calculateInterest(loan.amountRequested, loan.interestRate, loan.duration);
-        require(msg.value > 0 && msg.value >= loan.remainingAmountToPay + interest + penalty, "Invalid repayment amount");
-
+        require(msg.value >= loan.remainingAmountToPay + interest + penalty, "Invalid repayment amount");
 
         loan.remainingAmountToPay -= msg.value;
         loan.state = LoanState.Paid;
